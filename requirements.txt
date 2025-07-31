@@ -1,0 +1,9 @@
+transformers==4.51.3
+datasets
+accelerate
+psutil
+safetensors
+seaborn
+matplotlib
+numpy
+scipy
