@@ -32,6 +32,7 @@ class BaseEvaluator:
         self.layer_wise_save_path_of_massive = os.path.join(self.massive_experts_info_path, "layer_wise_analysis")
         self.expert_wise_save_path_of_massive = os.path.join(self.massive_experts_info_path, "expert_wise_analysis")
         self.super_experts_info_path = os.path.join(self.args.save_path, "super_experts_info")
+        # self.super_experts_info_path = "/home/sora/llm/moe/output/OLMoE-1B-7B-0924-tinystories/super_experts_info"
         self.layer_wise_save_path_of_super = os.path.join(self.super_experts_info_path, "layer_wise_analysis")
         self.expert_wise_save_path_of_super = os.path.join(self.super_experts_info_path, "expert_wise_analysis")
         self.super_experts_report_path = os.path.join(self.super_experts_info_path, "super_experts_report")
@@ -970,6 +971,84 @@ class MixtralEvaluator(BaseEvaluator):
         router_key = f"model.layers.{layer_idx}.block_sparse_moe.gate"
         W = layer.block_sparse_moe.gate.to_empty(device=dev).to(dtype=dtype)
         W.weight.data.copy_(self.model_st[router_key + '.weight'].to(device=dev, dtype=dtype))
+        return layer
+    
+class OlmoeEvaluator(BaseEvaluator):
+    def __init__(self, model, tokenizer, model_st, dev, args):
+        super().__init__(model, tokenizer, model_st, dev, args)
+        # Olmoe uses rotary embeddings which are typically handled by passing
+        # position IDs/embeddings through the layer's forward pass.
+        self.require_position_embeddings = True
 
+    def _load_layer_weight(self, layer_idx):
+        # Set up the list of experts to prune (zero-out) if any are specified.
+        if self.prune_experts is not None:
+            prune_list_router = [f"model.layers.{layer}.mlp.experts.{expert}" for layer, expert in self.prune_experts if int(expert) != -1]
+        else:
+            prune_list_router = []
+        if self.SE_list:
+            for layer, expert in self.SE_list:
+                if int(expert) != -1:
+                    prune_list_router.append(f"model.layers.{layer}.mlp.experts.{expert}")
+
+        layer_key = f"model.layers.{layer_idx}"
+        layer = self._get_module(self.model, layer_key)
+        dev = self.dev
+        dtype = self.dtype
+
+        # === Initialize LayerNorm weights ===
+        # Olmoe uses OlmoeRMSNorm for its normalization layers.
+        W = layer.input_layernorm.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.input_layernorm.weight"].to(device=dev, dtype=dtype))
+
+        W = layer.post_attention_layernorm.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.post_attention_layernorm.weight"].to(device=dev, dtype=dtype))
+
+        # === Initialize Self-Attention weights ===
+        # This includes the main Q, K, V, O projections and the specific norms for Q and K.
+        W = layer.self_attn.q_proj.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.self_attn.q_proj.weight"].to(device=dev, dtype=dtype))
+
+        W = layer.self_attn.k_proj.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.self_attn.k_proj.weight"].to(device=dev, dtype=dtype))
+
+        W = layer.self_attn.v_proj.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.self_attn.v_proj.weight"].to(device=dev, dtype=dtype))
+
+        W = layer.self_attn.o_proj.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.self_attn.o_proj.weight"].to(device=dev, dtype=dtype))
+
+        W = layer.self_attn.q_norm.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.self_attn.q_norm.weight"].to(device=dev, dtype=dtype))
+
+        W = layer.self_attn.k_norm.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{layer_key}.self_attn.k_norm.weight"].to(device=dev, dtype=dtype))
+
+
+        # === Initialize Sparse MoE Block (MLP) weights ===
+        # This model has 64 experts per MoE block.
+        expert_num = len(layer.mlp.experts)
+        for expert_idx in range(expert_num):
+            expert_key = f"model.layers.{layer_idx}.mlp.experts.{expert_idx}"
+            expert = self._get_module(self.model, expert_key)
+
+            W = expert.gate_proj.to_empty(device=dev).to(dtype=dtype)
+            W.weight.data.copy_(self.model_st[f"{expert_key}.gate_proj.weight"].to(device=dev, dtype=dtype))
+
+            W = expert.up_proj.to_empty(device=dev).to(dtype=dtype)
+            W.weight.data.copy_(self.model_st[f"{expert_key}.up_proj.weight"].to(device=dev, dtype=dtype))
+
+            W = expert.down_proj.to_empty(device=dev).to(dtype=dtype)
+            # Apply pruning by zeroing out the down_proj weight if the expert is in the prune list.
+            if expert_key in prune_list_router:
+                print(f"prune {expert_key}")
+                W.weight.data.copy_(torch.zeros_like(self.model_st[f"{expert_key}.down_proj.weight"].to(device=dev, dtype=dtype)))
+            else:
+                W.weight.data.copy_(self.model_st[f"{expert_key}.down_proj.weight"].to(device=dev, dtype=dtype))
+
+        # Load the router/gate weight.
+        router_key = f"model.layers.{layer_idx}.mlp.gate"
+        W = layer.mlp.gate.to_empty(device=dev).to(dtype=dtype)
+        W.weight.data.copy_(self.model_st[f"{router_key}.weight"].to(device=dev, dtype=dtype))
 
         return layer

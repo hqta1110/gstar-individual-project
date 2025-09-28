@@ -3,7 +3,7 @@ import torch
 import os
 import transformers
 from model_utils import get_model, get_model_safe_tensors
-from eval_utils import DeepSeekEvaluator, Qwen3MoeEvaluator, MixtralEvaluator
+from eval_utils import DeepSeekEvaluator, Qwen3MoeEvaluator, MixtralEvaluator, OlmoeEvaluator
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -45,7 +45,7 @@ def main(args):
     model_st = get_model_safe_tensors(args.model_name)    
     model_name = model.__class__.__name__
     print(model.config)
-    dev = torch.device('cuda:0')
+    dev = torch.device('cuda')
     model.eval()
 
     # initialize evaluator
@@ -54,7 +54,9 @@ def main(args):
     elif model_name in ['Qwen3MoeForCausalLM']:
         evaluator = Qwen3MoeEvaluator(model, tokenizer, model_st, dev, args)
     elif model_name in ['MixtralForCausalLM']:
-        evaluator = MixtralEvaluator(model, tokenizer, model_st, dev, args)        
+        evaluator = MixtralEvaluator(model, tokenizer, model_st, dev, args)
+    elif model_name in ['OlmoeForCausalLM']:
+        evaluator = OlmoeEvaluator(model, tokenizer, model_st, dev, args)
     else:
         raise NotImplementedError  
 
