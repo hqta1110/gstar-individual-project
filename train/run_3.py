@@ -9,7 +9,7 @@ from transformers import (
     Trainer,
     DataCollatorForLanguageModeling,
 )
-from SuperExpertLora import FlexibleLoraWrapper
+from SuperExpertLora import SuperExpertLora
 from dataclasses import dataclass
 from typing import Dict, List
 import torch
@@ -101,7 +101,7 @@ lora_params = {
     "bias": "none",
     "task_type": "CAUSAL_LM",
 }
-lora_wrapper = FlexibleLoraWrapper(model=model, target_info=target_info, **lora_params)
+lora_wrapper = SuperExpertLora(model=model, target_info=target_info, **lora_params)
 peft_model = lora_wrapper.get_model()
 peft_model.enable_input_require_grads()
 
