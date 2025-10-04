@@ -97,5 +97,5 @@ Evaluation scripts produce raw text outputs. This final step extracts the precis
    ```bash
    python post.py
    ```
-5. (Optional) My results are stored in result.csv. Actual values may differ depending on the dataset and the experts chosen for fine-tuning, so consider this file as a reference.
+5. (Optional) My results are stored in result.csv. Actual values may differ depending on the dataset and the experts chosen for fine-tuning/pruning, so consider this file as a reference.
 ---
