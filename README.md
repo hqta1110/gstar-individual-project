@@ -1,6 +1,6 @@
 # Super Expert LoRA: Fine-Tuning and Evaluation
 
-This project provides tools to implement and evaluate **Super Expert LoRA** and **Supervised Fine-Tuning (SFT)**. The experiments here were conducted using the **DeepSeek-V2-Lite 16B** model.
+This project provides tools to implement and evaluate **Super Expert LoRA** and **Supervised Fine-Tuning (SFT)**. The experiments here were conducted using the **DeepSeek-V2-Lite 16B** model. The GPU required for run this project is 1 A100.
 
 For the original research and usage for profiling Super Experts, please refer to the original project: [Super-Experts-Profilling](https://github.com/ZunhaiSu/Super-Experts-Profilling).
 
