@@ -90,8 +90,8 @@ def process_with_llm(samples: List[Dict],
 
 def main():
     MODEL_ID = "/home/sora/llm/moe/ckpt/Qwen2.5-32B-Instruct"
-    INPUT_JSONL = "/home/sora/llm/moe/output/deepseek_pre/result.jsonl"   # from script 1
-    OUTPUT_JSONL = "/home/sora/llm/moe/output/deepseek_pre/final_result.jsonl"
+    INPUT_JSONL = "/home/sora/llm/moe/output/deepseek_prunese_again_11/result.jsonl"   # from script 1
+    OUTPUT_JSONL = "/home/sora/llm/moe/output/deepseek_prunese_again_11/final_result.jsonl"
 
     print("Step 1: Loading input data...")
     samples = load_jsonl(INPUT_JSONL)

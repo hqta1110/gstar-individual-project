@@ -28,13 +28,11 @@ def normalize_pred(text: str) -> Optional[str]:
         return m.group(1).upper()
     return None
 
-# MODIFICATION: Added a check for the 'answerKey' field used in the ARC dataset.
+
 def gold_letter_from_example(example) -> Optional[str]:
     letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     
-    # ARC dataset uses 'answerKey'
     if "answerKey" in example and isinstance(example["answerKey"], str):
-        # The answerKey can be a letter (A,B,C,D) or a number (1,2,3,4)
         ans_key = example["answerKey"].strip().upper()
         if ans_key in letters:
             return ans_key
@@ -67,25 +65,22 @@ def gold_letter_from_example(example) -> Optional[str]:
                 return letters[i]
     return None
 
-# NEW FUNCTION: A dedicated loader for the ARC dataset.
 def load_arc():
     """Loads the ARC-Challenge test split."""
     print("Loading ARC-Challenge dataset...")
-    # We use the 'test' split for evaluation
+    # use the 'test' split for evaluation
     ds = load_dataset("ai2_arc", "ARC-Challenge")
     examples = list(ds["test"])
     print(f"Loaded {len(examples)} examples from ARC-Challenge test set.")
     return examples
 
-# MODIFICATION: Updated to handle ARC's nested choice structure.
 def prepare_examples(raw_examples):
     prepared = []
     print("Preparing examples...")
     for ex in tqdm(raw_examples):
         q = None
         choices = None
-        
-        # Standard question extraction (works for ARC)
+
         for k in ["question", "query", "input", "stem"]:
             if k in ex:
                 q = ex[k]
@@ -93,11 +88,9 @@ def prepare_examples(raw_examples):
         if not q and "prompt" in ex:
             q = ex["prompt"]
 
-        # ARC-specific choice extraction
         if "choices" in ex and isinstance(ex["choices"], dict) and "text" in ex["choices"]:
             choices = ex["choices"]["text"]
-        
-        # Fallback for other dataset formats
+
         elif not choices:
             for k in ["choices", "options", "answers"]:
                 if k in ex and isinstance(ex[k], (list, tuple)):
@@ -108,7 +101,7 @@ def prepare_examples(raw_examples):
             continue
 
         gold = gold_letter_from_example(ex)
-        if gold: # Only include examples where we can identify the gold answer
+        if gold: 
             prepared.append({"question": q, "choices": choices, "gold": gold})
     print(f"Prepared {len(prepared)} valid examples.")
     return prepared
@@ -154,11 +147,9 @@ if __name__ == "__main__":
     max_tokens = 512 # Keep this high enough for reasoning
     adapter_path = "/home/sora/llm/moe/ckpt/deepseek_presft_qkv/checkpoint-776"
     # --- Main Execution Logic ---
-    # MODIFICATION: Call the new function to load the ARC dataset.
     raw = load_arc()
     prepared = prepare_examples(raw)
 
-    # The evaluation function is generic and does not need to be changed.
     correct, total, results = evaluate(model_id, model_id, prepared, batch_size=batch_size, max_tokens=max_tokens, adapter_path=adapter_path)
     
     combined = []
@@ -167,12 +158,9 @@ if __name__ == "__main__":
         item["answer"] = ans
         combined.append(item)
     
-    # MODIFICATION: Changed output file name to reflect the new dataset.
     output_filename = "/home/sora/llm/moe/output/deepseek_presft_qkv/lora_arc_results_direct.json"
     print(f"Saving raw results to {output_filename}...")
     with open(output_filename, "w", encoding="utf-8") as f:
         json.dump(combined, f, indent=2)
     
     print("Script finished successfully.")
-    # The accuracy calculation logic is commented out, but you could add it back here
-    # by iterating through the 'combined' list and using normalize_pred().

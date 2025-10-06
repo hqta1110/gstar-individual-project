@@ -19,8 +19,6 @@ def build_prompt(question: str, choices: str) -> str:
 def normalize_pred(text: str) -> Optional[str]:
     if not text:
         return None
-
-    # First try to extract between <answer> ... </answer>
     m = re.search(r"<answer>\\s*([A-Z])\\s*</answer>", text, re.IGNORECASE)
     if m:
         return m.group(1).upper()
@@ -28,7 +26,6 @@ def normalize_pred(text: str) -> Optional[str]:
 
 
 def load_med():
-    # Load only the test split from huggingface
     ds = load_dataset("lavita/medical-qa-datasets", "med-qa-en-4options-source")
     examples = list(ds["test"])
     return examples
@@ -74,14 +71,6 @@ def evaluate(model_id: str,
     text_results = [output.outputs[0].text for output in outputs]
     assert len(text_results) == len(prompts)
     assert len(text_results) == len(examples)
-    # for i in range(len(examples)):
-    #     pred = normalize_pred(text_results[i])
-    #     ex = examples[i]
-    #     gold = ex.get("gold")
-    #     # print(f"Pred: {pred}, Gold: {gold}")
-    #     total += 1
-    #     if pred and gold and pred == gold:
-    #         correct += 1
 
     return correct, total, text_results
 
@@ -99,6 +88,6 @@ if __name__ == "__main__":
         item = rec.copy()      
         item["answer"] = ans
         combined.append(item)
-    with open("/home/sora/llm/moe/output/deepseek_pre/raw_result_med.json", "w", encoding="utf-8") as f:
+    with open("/home/sora/llm/moe/output/deepseek_prunese_again_11/raw_result_med.json", "w", encoding="utf-8") as f:
         json.dump(combined, f, indent=2)
     # print("RESULT: ", correct, "/", total, "accuracy=", (correct / total if total else 0.0))

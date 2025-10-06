@@ -67,7 +67,7 @@ def evaluate(model_id: str,
 if __name__ == "__main__":
     model_id = "/home/sora/.cache/huggingface/DeepSeek-V2-Lite-Pruned"
     input_file = "/home/sora/llm/moe/data/test/vmlu.jsonl"
-    output_file = "/home/sora/llm/moe/output/deepseek_pre/result.jsonl"
+    output_file = "/home/sora/llm/moe/output/deepseek_prunese_again_11/result.jsonl"
 
     evaluate(model_id, input_file, output_file,
              batch_size=8, max_tokens=512)
