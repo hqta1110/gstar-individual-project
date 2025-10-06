@@ -23,7 +23,6 @@ def normalize_pred(text: str) -> Optional[str]:
     if not text:
         return None
 
-    # First try to extract between <answer> ... </answer>
     m = re.search(r"<answer>\\s*([A-Z])\\s*</answer>", text, re.IGNORECASE)
     if m:
         return m.group(1).upper()
@@ -61,7 +60,6 @@ def gold_letter_from_example(example) -> Optional[str]:
 
 
 def load_mmlu():
-    # Load only the test split from huggingface
     ds = load_dataset("cais/mmlu", "all")
     examples = list(ds["test"])
     return examples
@@ -125,20 +123,13 @@ def evaluate(model_id: str,
     text_results = [output.outputs[0].text for output in outputs]
     assert len(text_results) == len(prompts)
     assert len(text_results) == len(examples)
-    # for i in range(len(examples)):
-    #     pred = normalize_pred(text_results[i])
-    #     ex = examples[i]
-    #     gold = ex.get("gold")
-    #     # print(f"Pred: {pred}, Gold: {gold}")
-    #     total += 1
-    #     if pred and gold and pred == gold:
-    #         correct += 1
+
 
     return correct, total, text_results
 
 
 if __name__ == "__main__":
-    model_id = "/home/sora/llm/moe/ckpt/DeepSeek-V2-Lite"
+    model_id = "/home/sora/.cache/huggingface/DeepSeek-V2-Lite-Pruned"
     batch_size = 8
     max_tokens = 2048
 
@@ -151,6 +142,6 @@ if __name__ == "__main__":
         item = rec.copy()      
         item["answer"] = ans
         combined.append(item)
-    with open("/home/sora/llm/moe/output/deepseek_pre/raw_result_baseline.json", "w", encoding="utf-8") as f:
+    with open("/home/sora/llm/moe/output/deepseek_prunese_again_11/raw_result_mmlu.json", "w", encoding="utf-8") as f:
         json.dump(combined, f, indent=2)
     # print("RESULT: ", correct, "/", total, "accuracy=", (correct / total if total else 0.0))
